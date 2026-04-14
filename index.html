@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🍸 Espresso Martini Crawl</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{--bg:#0d0b0e;--card:#1a1720;--accent:#c9a96e;--text:#e8e4ec;--text-dim:#8a8494;--green:#6ecf8e;--green-bg:#6ecf8e18;--red-bg:#cf6e6e18;--border:#2a2633}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:100px}
+  .header{text-align:center;padding:50px 20px 20px}
+  .header h1{font-family:'Playfair Display',serif;font-size:28px;color:var(--accent);letter-spacing:1px}
+  .header p{color:var(--text-dim);font-size:13px;margin-top:6px;font-weight:300}
+  .sync-status{text-align:center;font-size:11px;padding:4px;color:var(--green)}
+  .sync-status.offline{color:#cf6e6e}
+  .stats-bar{display:flex;justify-content:center;gap:24px;padding:16px 20px;margin:0 16px 8px;background:var(--card);border-radius:14px;border:1px solid var(--border)}
+  .stat{text-align:center}
+  .stat-num{font-size:22px;font-weight:600;color:var(--accent);font-family:'Playfair Display',serif}
+  .stat-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px}
+  .search-bar{padding:0 16px;margin-bottom:8px}
+  .search-bar input{width:100%;padding:12px 16px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+  .search-bar input::placeholder{color:var(--text-dim)}
+  .search-bar input:focus{border-color:var(--accent)}
+  .filters{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .filter-btn{flex-shrink:0;padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s}
+  .filter-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+  .sort-bar{display:flex;gap:8px;padding:8px 16px;align-items:center}
+  .sort-bar label{font-size:12px;color:var(--text-dim)}
+  .sort-bar select{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none}
+  .card-list{padding:8px 16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;transition:all .2s;cursor:pointer}
+  .card:active{transform:scale(0.98)}
+  .card.visited{border-left:3px solid var(--green)}
+  .card.not-visited{border-left:3px solid var(--border)}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .card-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;line-height:1.3}
+  .card-city{font-size:12px;color:var(--text-dim);margin-top:2px}
+  .badge{flex-shrink:0;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+  .badge.been{background:var(--green-bg);color:var(--green)}
+  .badge.not-been{background:var(--red-bg);color:var(--text-dim)}
+  .card-stars{margin-top:10px;display:flex;align-items:center;gap:2px}
+  .star-rating-text{margin-left:8px;font-size:13px;color:var(--text-dim);font-weight:500}
+  .card-notes{margin-top:10px;font-size:13px;color:var(--text-dim);font-style:italic;line-height:1.5}
+  .card-notes:empty{display:none}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--card);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;animation:slideUp .3s ease}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+  .modal h2{font-family:'Playfair Display',serif;font-size:22px;color:var(--accent);margin-bottom:4px}
+  .modal .modal-city{font-size:13px;color:var(--text-dim);margin-bottom:20px}
+  .modal-section{margin-bottom:20px}
+  .modal-section label{display:block;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .toggle-row{display:flex;align-items:center;gap:12px}
+  .toggle{width:50px;height:28px;border-radius:14px;background:var(--border);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+  .toggle.on{background:var(--green)}
+  .toggle::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:white;top:3px;left:3px;transition:transform .2s}
+  .toggle.on::after{transform:translateX(22px)}
+  .toggle-label{font-size:14px}
+  .modal-stars{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .modal-star{font-size:28px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .15s;position:relative;width:34px;text-align:center;display:inline-block}
+  .modal-star:active{transform:scale(1.2)}
+  .modal-rating-display{margin-left:8px;font-size:16px;color:var(--accent);font-weight:600}
+  .half-star-hint{font-size:11px;color:var(--text-dim);margin-top:6px}
+  textarea{width:100%;min-height:80px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;resize:vertical;outline:none}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--text-dim)}
+  .modal-actions{display:flex;gap:10px;margin-top:20px}
+  .btn{flex:1;padding:14px;border-radius:12px;border:none;font-size:15px;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;transition:all .2s}
+  .btn-save{background:var(--accent);color:var(--bg)}
+  .btn-save:active{transform:scale(0.97)}
+  .btn-cancel{background:var(--border);color:var(--text)}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--text-dim)}
+  .empty-state .emoji{font-size:40px;margin-bottom:12px}
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:12px;font-size:14px;font-weight:500;z-index:200;transition:transform .3s ease;white-space:nowrap}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍸 Espresso Martini Crawl</h1>
+  <p>South Bay Edition — Los Gatos to Menlo Park</p>
+</div>
+<div class="sync-status" id="syncStatus">🔄 Connecting...</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num" id="totalCount">0</div><div class="stat-label">Spots</div></div>
+  <div class="stat"><div class="stat-num" id="visitedCount">0</div><div class="stat-label">Visited</div></div>
+  <div class="stat"><div class="stat-num" id="remainingCount">0</div><div class="stat-label">To Go</div></div>
+  <div class="stat"><div class="stat-num" id="avgRating">—</div><div class="stat-label">Avg ⭐</div></div>
+</div>
+
+<div class="search-bar"><input type="text" id="searchInput" placeholder="Search restaurants or cities..." oninput="render()"></div>
+<div class="filters" id="filterBar"></div>
+<div class="sort-bar">
+  <label>Sort:</label>
+  <select id="sortSelect" onchange="render()">
+    <option value="city">City</option>
+    <option value="name">Name</option>
+    <option value="rating-desc">Rating ↓</option>
+    <option value="rating-asc">Rating ↑</option>
+    <option value="visited">Visited First</option>
+    <option value="not-visited">Not Visited First</option>
+  </select>
+  <label style="margin-left:auto">Show:</label>
+  <select id="showSelect" onchange="render()">
+    <option value="all">All</option>
+    <option value="visited">Visited</option>
+    <option value="not-visited">Not Visited</option>
+    <option value="rated">Rated</option>
+  </select>
+</div>
+
+<div class="card-list" id="cardList"></div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <h2 id="modalName"></h2>
+    <div class="modal-city" id="modalCity"></div>
+    <div class="modal-section">
+      <label>Been There?</label>
+      <div class="toggle-row">
+        <div class="toggle" id="modalToggle" onclick="toggleVisited()"></div>
+        <span class="toggle-label" id="modalToggleLabel">Not yet</span>
+      </div>
+    </div>
+    <div class="modal-section">
+      <label>Rating</label>
+      <div class="modal-stars" id="modalStars"></div>
+      <div class="half-star-hint">Tap left half of star = .5 | Tap right half = full</div>
+    </div>
+    <div class="modal-section">
+      <label>Notes</label>
+      <textarea id="modalNotes" placeholder="How was it? Flavor notes, vibes, would you go back?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" onclick="saveModal()">Save 🍸</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK via CDN (no npm needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+// ─── FIREBASE CONFIG ───
+const firebaseConfig = {
+  apiKey: "AIzaSyAK_iCMhwA_4bz_E2cidnBzNHGp1FsHOxs",
+  authDomain: "espresso-martini-crawl.firebaseapp.com",
+  databaseURL: "https://espresso-martini-crawl-default-rtdb.firebaseio.com",
+  projectId: "espresso-martini-crawl",
+  storageBucket: "espresso-martini-crawl.firebasestorage.app",
+  messagingSenderId: "874685086253",
+  appId: "1:874685086253:web:df348ddd0367f394b1d6a4"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const restaurantsRef = db.ref('restaurants');
+
+// ─── DEFAULT DATA ───
+const DEFAULT_RESTAURANTS = [
+  {id:1,name:"Second Story",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:2,name:"The Lexington House",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:3,name:"The Bywater",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:4,name:"Shepherd & Sims",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:5,name:"Forbes Mill Steakhouse",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:6,name:"Dio Deka",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:7,name:"Nick's Next Door",city:"Los Gatos",visited:false,rating:0,notes:""},
+  {id:8,name:"The Pressroom",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:9,name:"Eos & Nyx",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:10,name:"Paper Plane",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:11,name:"Haberdasher",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:12,name:"Mortar & Pestle Bar",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:13,name:"Dr. Funk",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:14,name:"55 South",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:15,name:"The Fountainhead",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:16,name:"SingleBarrel",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:17,name:"Hedley Club",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:18,name:"Urban Putt",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:19,name:"The Vesper",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:20,name:"District",city:"San Jose",visited:false,rating:0,notes:""},
+  {id:21,name:"The Oxford",city:"Santa Clara",visited:false,rating:0,notes:""},
+  {id:22,name:"Birk's",city:"Santa Clara",visited:false,rating:0,notes:""},
+  {id:23,name:"Mission Bar & Grill",city:"Santa Clara",visited:false,rating:0,notes:""},
+  {id:24,name:"Alexander's Steakhouse",city:"Cupertino",visited:false,rating:0,notes:""},
+  {id:25,name:"Eureka!",city:"Cupertino",visited:false,rating:0,notes:""},
+  {id:26,name:"The Oxford (Sunnyvale)",city:"Sunnyvale",visited:false,rating:0,notes:""},
+  {id:27,name:"Faultline Brewing Co.",city:"Sunnyvale",visited:false,rating:0,notes:""},
+  {id:28,name:"Agave Mexican Bistro",city:"Sunnyvale",visited:false,rating:0,notes:""},
+  {id:29,name:"Lazy Dog Restaurant",city:"Sunnyvale",visited:false,rating:0,notes:""},
+  {id:30,name:"Cascal",city:"Mountain View",visited:false,rating:0,notes:""},
+  {id:31,name:"Opal Social Club",city:"Mountain View",visited:false,rating:0,notes:""},
+  {id:32,name:"Scratch",city:"Mountain View",visited:false,rating:0,notes:""},
+  {id:33,name:"Broma",city:"Mountain View",visited:false,rating:0,notes:""},
+  {id:34,name:"Stein's Beer Garden",city:"Mountain View",visited:false,rating:0,notes:""},
+  {id:35,name:"The Post",city:"Los Altos",visited:false,rating:0,notes:""},
+  {id:36,name:"Sekoya Lounge & Kitchen",city:"Palo Alto",visited:false,rating:0,notes:""},
+  {id:37,name:"Ettan",city:"Palo Alto",visited:false,rating:0,notes:""},
+  {id:38,name:"Fleming's Steakhouse",city:"Palo Alto",visited:false,rating:0,notes:""},
+  {id:39,name:"Scotty's Bar",city:"Palo Alto",visited:false,rating:0,notes:""},
+  {id:40,name:"The Tap Room",city:"Palo Alto",visited:false,rating:0,notes:""},
+  {id:41,name:"Camper",city:"Menlo Park",visited:false,rating:0,notes:""},
+  {id:42,name:"Madera Bar (Rosewood)",city:"Menlo Park",visited:false,rating:0,notes:""},
+  {id:43,name:"Robin",city:"Menlo Park",visited:false,rating:0,notes:""},
+  {id:44,name:"Gravity (Four Seasons)",city:"Menlo Park",visited:false,rating:0,notes:""},
+  {id:45,name:"Willard Hicks",city:"Campbell",visited:false,rating:0,notes:""}
+];
+
+// ─── STATE ───
+let restaurants = [];
+let currentEditId = null;
+let modalRating = 0;
+let activeCity = "All";
+let firebaseReady = false;
+
+// ─── INIT ───
+function init() {
+  // Listen for live data from Firebase
+  restaurantsRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      restaurants = Object.values(data);
+      // Merge any new defaults not yet in Firebase
+      const existingIds = new Set(restaurants.map(r => r.id));
+      let added = false;
+      DEFAULT_RESTAURANTS.forEach(d => {
+        if (!existingIds.has(d.id)) {
+          restaurants.push({...d});
+          restaurantsRef.child(String(d.id)).set(d);
+          added = true;
+        }
+      });
+    } else {
+      // First time — seed Firebase with defaults
+      restaurants = DEFAULT_RESTAURANTS.map(r => ({...r}));
+      const obj = {};
+      restaurants.forEach(r => obj[r.id] = r);
+      restaurantsRef.set(obj);
+    }
+    firebaseReady = true;
+    document.getElementById('syncStatus').textContent = '✅ Live synced';
+    document.getElementById('syncStatus').className = 'sync-status';
+    buildFilters();
+    render();
+  }, (error) => {
+    document.getElementById('syncStatus').textContent = '❌ Sync error — using local data';
+    document.getElementById('syncStatus').className = 'sync-status offline';
+    // Fallback to localStorage
+    const saved = localStorage.getItem('espresso_martini_data');
+    restaurants = saved ? JSON.parse(saved) : DEFAULT_RESTAURANTS.map(r => ({...r}));
+    buildFilters();
+    render();
+  });
+}
+
+function saveToFirebase(restaurant) {
+  restaurantsRef.child(String(restaurant.id)).update({
+    visited: restaurant.visited,
+    rating: restaurant.rating,
+    notes: restaurant.notes
+  });
+}
+
+// ─── FILTERS & RENDER ───
+function buildFilters() {
+  const cities = ["All", ...new Set(restaurants.map(r => r.city))];
+  document.getElementById('filterBar').innerHTML = cities.map(c =>
+    `<button class="filter-btn ${c===activeCity?'active':''}" onclick="setFilter('${c}')">${c}</button>`
+  ).join('');
+}
+
+function setFilter(city) { activeCity = city; buildFilters(); render(); }
+
+function getFiltered() {
+  let list = [...restaurants];
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const show = document.getElementById('showSelect').value;
+  if (activeCity !== "All") list = list.filter(r => r.city === activeCity);
+  if (search) list = list.filter(r => r.name.toLowerCase().includes(search) || r.city.toLowerCase().includes(search));
+  if (show === "visited") list = list.filter(r => r.visited);
+  if (show === "not-visited") list = list.filter(r => !r.visited);
+  if (show === "rated") list = list.filter(r => r.rating > 0);
+  const sort = document.getElementById('sortSelect').value;
+  list.sort((a, b) => {
+    switch(sort) {
+      case 'name': return a.name.localeCompare(b.name);
+      case 'city': return a.city.localeCompare(b.city) || a.name.localeCompare(b.name);
+      case 'rating-desc': return (b.rating||0) - (a.rating||0) || a.name.localeCompare(b.name);
+      case 'rating-asc': return (a.rating||0) - (b.rating||0) || a.name.localeCompare(b.name);
+      case 'visited': return (b.visited?1:0) - (a.visited?1:0);
+      case 'not-visited': return (a.visited?1:0) - (b.visited?1:0);
+      default: return 0;
+    }
+  });
+  return list;
+}
+
+function renderStarsHTML(rating) {
+  let h = '';
+  for (let i = 1; i <= 5; i++) {
+    if (rating >= i) h += '⭐';
+    else if (rating >= i - 0.5) h += '🌟';
+    else h += '<span style="opacity:0.25">☆</span>';
+  }
+  return h;
+}
+
+function render() {
+  const list = getFiltered();
+  const c = document.getElementById('cardList');
+  if (!list.length) {
+    c.innerHTML = '<div class="empty-state"><div class="emoji">🔍</div><p>No spots match your filters</p></div>';
+  } else {
+    c.innerHTML = list.map(r => `
+      <div class="card ${r.visited?'visited':'not-visited'}" onclick="openModal(${r.id})">
+        <div class="card-top">
+          <div>
+            <div class="card-name">${r.name}</div>
+            <div class="card-city">📍 ${r.city}, CA</div>
+          </div>
+          <span class="badge ${r.visited?'been':'not-been'}">${r.visited?'✓ Been':'Go Next'}</span>
+        </div>
+        <div class="card-stars">
+          ${r.rating > 0 ? renderStarsHTML(r.rating) : '<span style="color:var(--text-dim);font-size:13px">Not rated yet</span>'}
+          ${r.rating > 0 ? `<span class="star-rating-text">${r.rating}/5</span>` : ''}
+        </div>
+        <div class="card-notes">${r.notes ? '&ldquo;'+r.notes+'&rdquo;' : ''}</div>
+      </div>
+    `).join('');
+  }
+  const visited = restaurants.filter(r => r.visited);
+  const rated = restaurants.filter(r => r.rating > 0);
+  document.getElementById('totalCount').textContent = restaurants.length;
+  document.getElementById('visitedCount').textContent = visited.length;
+  document.getElementById('remainingCount').textContent = restaurants.length - visited.length;
+  document.getElementById('avgRating').textContent = rated.length ? (rated.reduce((s,r)=>s+r.rating,0)/rated.length).toFixed(1) : '—';
+}
+
+// ─── MODAL ───
+function openModal(id) {
+  currentEditId = id;
+  const r = restaurants.find(x => x.id === id);
+  document.getElementById('modalName').textContent = r.name;
+  document.getElementById('modalCity').textContent = '📍 ' + r.city + ', CA';
+  document.getElementById('modalNotes').value = r.notes || '';
+  const toggle = document.getElementById('modalToggle');
+  const label = document.getElementById('modalToggleLabel');
+  if (r.visited) { toggle.classList.add('on'); label.textContent = 'Been there! 🍸'; }
+  else { toggle.classList.remove('on'); label.textContent = 'Not yet'; }
+  modalRating = r.rating || 0;
+  renderModalStars();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  currentEditId = null;
+}
+
+function toggleVisited() {
+  const toggle = document.getElementById('modalToggle');
+  const label = document.getElementById('modalToggleLabel');
+  toggle.classList.toggle('on');
+  if (toggle.classList.contains('on')) { label.textContent = 'Been there! 🍸'; }
+  else { label.textContent = 'Not yet'; }
+}
+
+function renderModalStars() {
+  const container = document.getElementById('modalStars');
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    let icon;
+    if (modalRating >= i) icon = '⭐';
+    else if (modalRating >= i - 0.5) icon = '🌟';
+    else icon = '☆';
+    html += `<span class="modal-star" data-star="${i}" onclick="handleStarClick(event, ${i})">${icon}</span>`;
+  }
+  html += `<span class="modal-rating-display">${modalRating > 0 ? modalRating + '/5' : ''}</span>`;
+  container.innerHTML = html;
+}
+
+function handleStarClick(e, starNum) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const clickX = e.clientX || (e.touches && e.touches[0].clientX) || rect.left;
+  const midpoint = rect.left + rect.width / 2;
+  if (clickX < midpoint) {
+    modalRating = starNum - 0.5;
+  } else {
+    modalRating = starNum;
+  }
+  // Tap same rating to clear
+  if (modalRating === 0) modalRating = 0;
+  renderModalStars();
+}
+
+function saveModal() {
+  const r = restaurants.find(x => x.id === currentEditId);
+  if (!r) return;
+  r.visited = document.getElementById('modalToggle').classList.contains('on');
+  r.rating = modalRating;
+  r.notes = document.getElementById('modalNotes').value.trim();
+  saveToFirebase(r);
+  showToast('Saved! 🍸');
+  closeModal();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── START ───
+init();
+</script>
+</body>
+</html>
